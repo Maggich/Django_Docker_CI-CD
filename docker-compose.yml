@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Исправил путь к данным БД
+
+  web:
+    build: ./app
+    container_name: django_app
+    # Добавили collectstatic, чтобы Django выгрузил файлы в общую папку
+    command: >
+      sh -c "python manage.py migrate && 
+             python manage.py collectstatic --noinput &&
+             gunicorn project.wsgi:application --bind 0.0.0.0:8000"
+    volumes:
+      - ./app:/app
+      - static_volume:/app/static # Привязываем статику здесь
+    depends_on:
+      - db
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      DATABASE_URL: postgres://myuser:mypassword@db:5432/mydb
+  
+  nginx:
+    image: nginx:latest
+    container_name: nginx_server
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/app/static:ro # И здесь (только для чтения)
+    depends_on:
+      - web
+  
+volumes:
+  postgres_data:
+  static_volume: # Объявляем общий объем для статики
