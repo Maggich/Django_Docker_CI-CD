@@ -48,6 +48,8 @@ jobs:
           POSTGRES_DB: mydb
           POSTGRES_USER: myuser
           POSTGRES_PASSWORD: mypassword
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
         run: | 
           cd app
           pytest
